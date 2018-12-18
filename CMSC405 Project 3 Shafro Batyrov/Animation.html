@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<head>
+<meta charset="UTF-8">
+<title>CMSC 405 Project 3 - Shafro Batyrov</title>
+<style>
+body {background-color:#6666ff}
+</style>
+<script src="three.js"></script>
+<script>
+
+"use strict";
+
+var scene, camera, renderer;  // Three.js rendering basics.
+var canvas;  // The canvas on which the image is rendered.
+var model;   // Contains the visible objects in the scene
+
+// Nodes
+var icoAndCube; //cube + icosahedron
+var torusKnotAndDod; // torus knot + dodecahedron
+var sphereAndCyl; //sphere + decagon/cylinder
+
+var animating = false;  //set to true when any animation is running.
+var animatedIco_Cube = true;
+var animatedTorus_Dod = true;
+var animatedSphere_Cyl = true;
+
+
+	//create scene graph
+
+	function createWorld() {
+    renderer.setClearColor(0xffccff );  // Set background color to lilac
+	scene = new THREE.Scene();
+
+	camera = new THREE.PerspectiveCamera(90, canvas.width/canvas.height, 1, 30); //create camera
+	camera.position.z = 20; //place camera on + z-axis
+
+  //lights
+  var greenLight = new THREE.DirectionalLight(0x40ff00, .3);
+  greenLight.position.set(1,0,0);
+  scene.add(greenLight);
+  
+  var blueLight = new THREE.DirectionalLight(0x0000ff, .3);
+  blueLight.position.set(0,1,0);
+  scene.add(blueLight);
+  
+  var redLight = new THREE.DirectionalLight(0xff0000, .3);
+  redLight.position.set(0,0,1);
+  scene.add(redLight);
+  
+  var light = new THREE.PointLight( 0x00ff00, .5, 100 );
+  light.position.set( -50, 0, 50 );
+  scene.add( light );
+
+  var viewpointLight = new THREE.DirectionalLight( 0xffffff, 0.25 );  // a light to shine in the direction the camera faces
+	viewpointLight.position.set(0,0,1);  // shines down the z-axis
+	scene.add(viewpointLight);
+
+  model = new THREE.Object3D();
+  model.position.y = -3;
+
+  // icosahedron
+	var ico = new THREE.Mesh(
+	  new THREE.IcosahedronGeometry(3,0),
+		new THREE.MeshLambertMaterial({ color: 0xffffff })
+	);
+  icoAndCube = new THREE.Object3D();
+  icoAndCube.add(ico);
+  model.add(icoAndCube);
+  
+  // cube
+  var cube = new THREE.Mesh(
+    new THREE.BoxGeometry(1, 1, 1),
+    new THREE.MeshLambertMaterial({color: 0x0000ff })
+  )
+  cube.position.y = -10;
+  icoAndCube.add(cube);
+
+  // torusKnot
+  var torusKnot = new THREE.Mesh(
+    new THREE.TorusKnotGeometry( 8, 1, 100, 16 ),
+    new THREE.MeshPhongMaterial({ color: 0xff00bf, shininess: 45 })
+  );
+  torusKnot.rotation.set(1,0,0);
+  torusKnot.position.y = 8;
+  torusKnotAndDod = new THREE.Object3D();
+  torusKnotAndDod.add(torusKnot);
+  model.add(torusKnotAndDod);
+
+  // sphere
+  var sphere = new THREE.Mesh(
+    new THREE.SphereGeometry(.5, 8, 1),
+    new THREE.MeshPhongMaterial({ color: 0x68228b })
+  )
+  sphere.position.y = 5;
+  sphereAndCyl = new THREE.Object3D();
+  sphereAndCyl.add(sphere);
+  model.add(sphereAndCyl);
+
+
+  // cylinder but really a decagon
+  var cylinder = new THREE.Mesh(
+    new THREE.CylinderGeometry(5, 5, 3, 10),
+    new THREE.MeshPhongMaterial({color: 0x66ff66 })
+  )
+  cylinder.position.y = -10;
+  cylinder.position.x = -6.5;
+  sphereAndCyl.add(cylinder);
+
+  //dodecahedron
+  var dod = new THREE.Mesh(
+    new THREE.DodecahedronGeometry(1, 0),
+    new THREE.MeshLambertMaterial({color: 0xff0080 })
+  )
+  dod.position.y = -5;
+  torusKnotAndDod.add(dod);
+  scene.add(model);
+}
+
+// Render the scene.
+	function render() {
+    renderer.render(scene, camera);
+}
+
+//update upcoming frames
+	function updateForFrame() {
+  if (animatedTorus_Dod) {
+    torusKnotAndDod.rotation.z +=0.01
+  }
+  if (animatedIco_Cube) {
+    icoAndCube.rotation.y +=0.02
+  }
+  if (animatedSphere_Cyl) {
+    sphereAndCyl.rotation.x +=0.02
+    sphereAndCyl.rotation.z +=0.02
+  }
+}
+
+
+//--------------------------- animation support -----------------------------------
+
+function doFrame() {
+    if (animating) {
+        updateForFrame(); //runs the animation
+        render();
+        requestAnimationFrame(doFrame); //arranges for itself to be called again to do the next frame
+	}
+}
+
+//function that responds to "Animate" checkbox setting.
+function doAnimateCheckbox() {
+  var anim = document.getElementById("animate").checked;
+	if (anim != animating) {
+		animating = anim;
+		if (animating) {
+			doFrame();
+		}
+	}
+}
+
+// Toggles torusKnotAndDod Animation
+function torusKnotCheckbox() {
+  animatedTorus_Dod = !animatedTorus_Dod;
+}
+
+// Toggles icoAndCube Animation
+function icoCheckbox() {
+  animatedIco_Cube = !animatedIco_Cube;
+}
+
+// Toggles sphereAndCyl Animation
+function sphereCheckbox() {
+  animatedSphere_Cyl = !animatedSphere_Cyl;
+}
+
+//----------------------------- keyboard support ----------------------------------
+
+//Allows program to process keyboard input
+function doKey(event) {
+	var code = event.keyCode;
+	var rotated = true;
+	switch( code ) {
+	    case 37: model.rotation.y -= 0.03;  break;    // left arrow
+	    case 38: model.rotation.x -= 0.03;  break;    // up arrow
+	    case 39: model.rotation.y +=  0.03; break;    // right arrow
+	    case 40: model.rotation.x += 0.03;  break;    // down arrow
+	    default: rotated = false;
+	}
+	if (rotated) {
+		event.preventDefault();  // Prevent keys from scrolling the page.
+		if (!animating) { //Prevents extra render if an animation is running
+			render();
+		}
+	}
+}
+
+//----------------------------------------------------------------------------------
+
+//This init() function is called by the onload event when the document has loaded.
+function init() {
+	try {
+	    canvas = document.getElementById("glcanvas");
+		renderer = new THREE.WebGLRenderer( {
+		    canvas: canvas,
+		    antialias: true
+		} );
+	}
+	catch (e) {
+		document.getElementById("canvas-holder").innerHTML =
+		         "<h3><b>Sorry, WebGL is unavailable.</b><h3>";
+		return;
+	}
+	document.addEventListener("keydown", doKey, false);
+  document.getElementById("animate").checked = false;
+  document.getElementById("animate").onchange = doAnimateCheckbox;
+	document.getElementById("animatedTorus_Dod").checked = true;
+	document.getElementById("animatedTorus_Dod").onchange = torusKnotCheckbox;
+  document.getElementById("animatedIco_Cube").checked = true;
+	document.getElementById("animatedIco_Cube").onchange = icoCheckbox;
+  document.getElementById("animatedSphere_Cyl").checked = true;
+	document.getElementById("animatedSphere_Cyl").onchange = sphereCheckbox;
+	createWorld();
+	render();
+}
+
+</script>
+</head>
+<body onload="init()">
+
+<h2>CMSC 405 Project 3 </h2>
+
+<p><b>Animations may be controlled using the up, down, left, and right arrow keys.</b></p>
+
+<p>
+  <label><input type="checkbox" id="animate">All Animation</label>
+</p>
+<p>
+  <label><input type="checkbox" id="animatedTorus_Dod">Torus Knot and Dodecahedron Rotation</label>
+  <label><input type="checkbox" id="animatedIco_Cube">Cube + Icosahedron Rotation</label>
+  <label><input type="checkbox" id="animatedSphere_Cyl">Sphere and Decagon Rotation</label>
+</p>
+
+<div id="canvas-holder">
+<canvas id="glcanvas" width="640" height="500"></canvas>
+</div>
+
+</body>
+</html>
